@@ -16,7 +16,7 @@ A simple wrapper around [HostDime.com](http://www.hostdime.com/)'s client API.
         return console.error(err);
       
       servers.forEach(function(server) {
-        console.log(server.name)
+        console.log(server.name);
       });
     });
 
@@ -24,7 +24,7 @@ A simple wrapper around [HostDime.com](http://www.hostdime.com/)'s client API.
 
 Creates the API object. `options` is an optional object with the following acceptable properties:
 
-* `endpoint` - The URL to the API endpoint. This defaults to `https://core.hostdime.com/v1`
+* `endpoint` - The URL to the API endpoint. This defaults to `https://api.hostdime.com/v1`
 * `sandbox` - Toggles a sandbox mode that prevents any changes to your account, which is useful for testing and development purposes. This defaults to `false`
 
 
