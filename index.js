@@ -1,5 +1,3 @@
-require('sugar');
-
 var request     = require('request'),
     crypto      = require('crypto'),
     url         = require('url'),
@@ -51,7 +49,7 @@ ApiClient.prototype.call = function(action, parameters, callback) {
 };
 
 ApiClient.prototype.generateUrl = function(action, query_object) {
-  var action_url   = Object.clone(this.options.endpoint);
+  var action_url   = Object.create(this.options.endpoint);
   
   action_url.pathname  = action_url.pathname.split('/').join('/')+'/';
   action_url.pathname += action.split('.').join('/');
