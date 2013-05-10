@@ -1,4 +1,5 @@
-var request     = require('request'),
+var http        = require('http'),
+    https       = require('https'),
     crypto      = require('crypto'),
     url         = require('url'),
     querystring = require('querystring');
@@ -32,19 +33,29 @@ ApiClient.prototype.call = function(action, parameters, callback) {
   var query_object   = this.generateQueryObject(parameters, timestamp, uuid, hash);
   var action_url     = this.generateUrl(action, query_object);
 
-  request.get(action_url, function(err, res, body){
-    try {
-      var result = JSON.parse(body);
-    } catch (e) {
-      return callback(new Error('Invalid JSON returned'), null);
-    }
+  var protocol = this.options.endpoint.protocol == 'https:' ? https : http;
 
-    if (err)
-      return callback(err, null);
-    else if (result.error)
-      return callback(new Error(result.error.message), null);
-    else
-      return callback(null, result.response);
+  var req = protocol.get(action_url, function(res) {
+    var output = '';
+    
+    res.on('data', function(data){
+      output += data;
+    });
+
+    res.on('end', function(){
+      try {
+        var parsed = JSON.parse(output);
+      } catch (e) {
+        return callback(new Error('Invalid JSON returned'), null);
+      }
+
+      if (parsed.error)
+        return callback(new Error(parsed.error.message), null);
+      else
+        return callback(null, parsed.response);
+    });
+  }).on('error', function(err) {
+    callback(new Error(err.message), null);
   });
 };
 

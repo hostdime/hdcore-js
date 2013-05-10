@@ -22,6 +22,5 @@
     "sinon": "*"
   },
   "dependencies": {
-    "request": "~2.21.0"
   }
 }

@@ -1,7 +1,7 @@
 var hdcore  = require('../index'),
     should  = require('chai').should(),
     sinon   = require('sinon'),
-    request = require('request');
+    https   = require('https');
 
 describe('ApiClient', function () {
   var client;
@@ -219,16 +219,26 @@ describe('ApiClient', function () {
   });
 
   describe('#call()', function () {
-    var client, callback, stub;
+    var client, callback, request, response;
 
     beforeEach(function(){
       client   = hdcore.createClient('foobar','fazbaz');
       callback = sinon.spy();
-      stub     = sinon.stub(request, 'get');
+      
+      request  = sinon.stub(https, 'get');
+      request.on = sinon.stub();
+      request.returns({
+        on: request.on
+      });
+
+      response = {
+        on: sinon.stub()
+      };
+      response.on.withArgs('end').yields();
     });
 
     afterEach(function(){
-      if (stub) stub.restore();
+      if (request) request.restore();
     });
 
     it('should exist', function () {
@@ -236,45 +246,61 @@ describe('ApiClient', function () {
     });
 
     it('should call the callback when the request is complete', function(){
-      stub.callsArg(1);
+      response.on.withArgs('data').yields("{}");
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
       callback.called.should.be.true;
-
-      stub.restore();
     });
 
     it('should only call the callback once', function(){
-      stub.callsArg(1);
+      response.on.withArgs('data').yields("{}");
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
       callback.calledOnce.should.be.true;
+    });
 
-      stub.restore();
+    it('should handle network errors gracefully', function(){
+      request.on.withArgs('error').yields(new Error('Some error message'));
+
+      client.call('utility.echo', callback);
+
+      should.exist(callback.lastCall.args[0]);
+      callback.lastCall.args[0].should.be.instanceOf(Error);
+      callback.lastCall.args[0].message.should.equal('Some error message');
+    });
+
+    it('should handle invalid API output gracefully', function(){
+      response.on.withArgs('data').yields("<strong>this isn't valid json</strong>");
+      request.yields(response);
+
+      client.call('utility.echo', callback);
+
+      should.exist(callback.lastCall.args[0]);
+      callback.lastCall.args[0].should.be.instanceOf(Error);
     });
 
     it('should pass a result to a successful request', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({
-          error: null,
-          response: {}
-        })
-      );
+      response.on.withArgs('data').yields(JSON.stringify({
+        error: null,
+        response: {}
+      }));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
       should.exist(callback.lastCall.args[1]);
-
-      stub.restore();
     });
 
     it('should pass an error to an unsuccessful request', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({
-          error: {},
-          response: null
-        })
-      );
+      response.on.withArgs('data').yields(JSON.stringify({
+        error: {},
+        response: null
+      }));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
@@ -282,11 +308,11 @@ describe('ApiClient', function () {
     });
 
     it('should not pass an error to a successful request', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({
-          error: null,
-          response: {}
-        })
-      );
+      response.on.withArgs('data').yields(JSON.stringify({
+        error: null,
+        response: {}
+      }));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
@@ -294,21 +320,20 @@ describe('ApiClient', function () {
     });
 
     it('should not pass a result to an unsuccessful request', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({
-          error: {},
-          response: null
-        })
-      );
+      response.on.withArgs('data').yields(JSON.stringify({
+        error: {},
+        response: null
+      }));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
       should.not.exist(callback.lastCall.args[1]);
-
-      stub.restore();
     });
 
     it('should pass an error as an object', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({error:{}}));
+      response.on.withArgs('data').yields(JSON.stringify({error:{}}));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
@@ -316,7 +341,8 @@ describe('ApiClient', function () {
     });
 
     it('should pass an error as an error object', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({error:{}}));
+      response.on.withArgs('data').yields(JSON.stringify({error:{}}));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
@@ -324,19 +350,29 @@ describe('ApiClient', function () {
     });
 
     it('should pass a response as an object', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({response:{}}));
+      response.on.withArgs('data').yields(JSON.stringify({response:{}}));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
       callback.lastCall.args[1].should.be.an('object');
     });
 
-    it('should pass only the response object when successful', function(){
-      stub.callsArgWith(1,null,null, JSON.stringify({response:{foo:'bar'}}));
+    it('should pass back an equivalent object when calling utility.echo', function(){
+      var obj = {
+        foo: "bar",
+        test: {
+          faz: "baz",
+          numbers: [14,15,51,235,15,626,359]
+        }
+      };
+
+      response.on.withArgs('data').yields(JSON.stringify({response:obj}));
+      request.yields(response);
 
       client.call('utility.echo', callback);
 
-      callback.lastCall.args[1].should.deep.equal({foo:'bar'});
+      callback.lastCall.args[1].should.deep.equal(obj);
     });
   });
 });
