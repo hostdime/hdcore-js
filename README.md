@@ -1,5 +1,7 @@
 # hdcore-js
 
+![image](https://travis-ci.org/hostdime/hdcore-js.png)
+
 A simple wrapper around [HostDime.com](http://www.hostdime.com/)'s client API.
 
 ## Install
