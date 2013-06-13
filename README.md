@@ -10,17 +10,21 @@ A simple wrapper around [HostDime.com](http://www.hostdime.com/)'s client API.
 
 ## Usage
 
-    var hdcore = require('hdcore');
-    var client = hdcore.createClient('public_key', 'private_key');
-    
-    client.call('server.list', function(err, servers){
-      if (err)
-        return console.error(err);
-      
-      servers.forEach(function(server) {
-        console.log(server.name);
-      });
-    });
+~~~js
+var hdcore = require('hdcore');
+var client = hdcore.createClient('public_key', 'private_key');
+~~~
+
+~~~js
+client.call('server.list', function(err, servers){
+  if (err)
+    return console.error(err);
+  
+  servers.forEach(function(server) {
+    console.log(server.name);
+  });
+});
+~~~
 
 ### hdcore.createClient(public_key, private_key, options)
 
