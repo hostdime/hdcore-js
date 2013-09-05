@@ -109,10 +109,12 @@ describe('ApiClient', function () {
       client.generateUrl(action).should.contain(action.split('.').join('/'))
     });
 
-    it('should contain the querystringified parameters', function(){
-      var parameters = {foo:'bar',faz:'baz',one:'two',three:4,five:['six','seven','eight']};
-      client.generateUrl('utility.echo', parameters).should.contain(querystring.stringify(parameters));
-    });
+    // NOT A GET REQUEST ANYMORE
+    // 
+    // it('should contain the querystringified parameters', function(){
+    //   var parameters = {foo:'bar',faz:'baz',one:'two',three:4,five:['six','seven','eight']};
+    //   client.generateUrl('utility.echo', parameters).should.contain(querystring.stringify(parameters));
+    // });
 
     it('should request json', function(){
       client.generateUrl('utility.echo').should.match(/\.json$/);
@@ -225,10 +227,14 @@ describe('ApiClient', function () {
       client   = hdcore.createClient('foobar','fazbaz');
       callback = sinon.spy();
       
-      request  = sinon.stub(https, 'get');
+      request  = sinon.stub(https, 'request');
       request.on = sinon.stub();
+      request.write = sinon.stub();
+      request.end = sinon.stub();
       request.returns({
-        on: request.on
+        on: request.on,
+        write: request.write,
+        end: request.end
       });
 
       response = {

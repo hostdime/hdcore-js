@@ -35,7 +35,17 @@ ApiClient.prototype.call = function(action, parameters, callback) {
 
   var protocol = this.options.endpoint.protocol == 'https:' ? https : http;
 
-  var req = protocol.get(action_url, function(res) {
+  var post_data = querystring.stringify(query_object);
+
+  var options = url.parse(action_url);
+
+  options.method = 'POST';
+  options.headers = {
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'Content-Length': post_data.length
+  };
+
+  var req = protocol.request(options, function(res) {
     var output = '';
     
     res.on('data', function(data){
@@ -54,9 +64,14 @@ ApiClient.prototype.call = function(action, parameters, callback) {
       else
         return callback(null, parsed.response);
     });
-  }).on('error', function(err) {
+  })
+
+  req.on('error', function(err) {
     callback(new Error(err.message), null);
   });
+
+  req.write(post_data);
+  req.end();
 };
 
 ApiClient.prototype.generateUrl = function(action, query_object) {
@@ -65,7 +80,7 @@ ApiClient.prototype.generateUrl = function(action, query_object) {
   action_url.pathname  = action_url.pathname.split('/').join('/')+'/';
   action_url.pathname += action.split('.').join('/');
   action_url.pathname += '.json';
-  action_url.search   = querystring.stringify(query_object);
+  // action_url.search   = querystring.stringify(query_object);
 
   return url.format(action_url);
 }
